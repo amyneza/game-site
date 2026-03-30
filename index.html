@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>老年连连看</title>
+    <title>老年休闲连连看</title>
     <style>
         * {
             margin: 0;
@@ -20,13 +20,13 @@
             font-size: 50px;
             font-weight: bold;
             color: #000;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
         .level-text {
             font-size: 36px;
             color: #d32f2f;
             font-weight: bold;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
         }
         #canvas {
             border: 10px solid #333;
@@ -35,12 +35,12 @@
         }
         .reset-btn {
             font-size: 32px;
-            padding: 20px 40px;
+            padding: 15px 30px;
             background: #ff5722;
             color: white;
             border: none;
             border-radius: 15px;
-            margin-top: 30px;
+            margin-top: 20px;
             cursor: pointer;
         }
     </style>
@@ -50,7 +50,7 @@
     <div class="title">🧡 老年休闲连连看 🧡</div>
     <div class="level-text" id="level-info">当前段位：新手</div>
 
-    <canvas id="canvas" width="900" height="700"></canvas>
+    <canvas id="canvas" width="900" height="750"></canvas>
     <br>
     <button class="reset-btn" onclick="restartGame()">重新开始这一局</button>
 
@@ -59,131 +59,197 @@ const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
 const LEVEL_NAMES = ["新手", "入门", "熟练", "大师", "宗师"];
-let currentLevel = 0;
+const GRID_SIZES = [4, 5, 6, 7, 8];
+const EMOJIS = ["🍎", "🍐", "🍊", "🍋", "🍌", "🍉", "🍇", "🍓", "🍒", "🍑", "🥭", "🥥", "🍍", "🍈", "🍇", "🍏"];
 
+let currentLevel = 0;
+let gridSize = 4;
+let tileSize = 90;
+let offsetX, offsetY;
 let tiles = [];
 let first = null;
-let isBusy = false;
+let isProcessing = false;
 
-const ICONS = ["🍎", "🍐", "🍊", "🍋", "🍌", "🍉", "🍇", "🍓", "🍒", "🍑", "🥭", "🥥"];
-
-function startLevel(level) {
+// 开始关卡
+function startGame(level) {
     currentLevel = level;
+    gridSize = GRID_SIZES[level];
     document.getElementById("level-info").innerText = `当前段位：${LEVEL_NAMES[level]}`;
-
-    let size = 4 + level;
-    if (size > 8) size = 8;
-    createGame(size);
+    createBoard();
 }
 
-function createGame(gridSize) {
+// 创建棋盘
+function createBoard() {
     tiles = [];
     first = null;
-    isBusy = false;
+    isProcessing = false;
+    tileSize = 840 / gridSize;
+    offsetX = (canvas.width - gridSize * tileSize) / 2;
+    offsetY = 40;
 
     let total = gridSize * gridSize;
-    let pairCount = total / 2;
-    let selected = ICONS.slice(0, pairCount);
-    let arr = [...selected, ...selected];
-    arr.sort(() => Math.random() - 0.5);
-
-    let tileSize = 90;
-    let startX = (canvas.width - gridSize * tileSize) / 2;
-    let startY = 100;
+    if (total % 2 !== 0) total--;
+    let pairs = total / 2;
+    let icons = EMOJIS.slice(0, pairs);
+    let list = [...icons, ...icons];
+    list.sort(() => Math.random() - 0.5);
 
     for (let row = 0; row < gridSize; row++) {
         for (let col = 0; col < gridSize; col++) {
-            let index = row * gridSize + col;
+            let i = row * gridSize + col;
             tiles.push({
-                x: startX + col * tileSize,
-                y: startY + row * tileSize,
-                w: tileSize - 8,
-                h: tileSize - 8,
-                icon: arr[index],
-                matched: false,
-                visible: true
+                row, col,
+                x: offsetX + col * tileSize,
+                y: offsetY + row * tileSize,
+                w: tileSize - 6,
+                h: tileSize - 6,
+                icon: list[i],
+                show: true,
+                matched: false
             });
         }
     }
-    draw();
+    drawAll();
 }
 
-function draw() {
+// 绘制所有
+function drawAll() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     tiles.forEach(t => {
-        if (!t.visible) return;
-        ctx.fillStyle = t.matched ? "#a5d6ff" : "#ffffff";
+        if (!t.show) return;
+        ctx.fillStyle = t.matched ? "#a1dfff" : "#fff";
         ctx.fillRect(t.x, t.y, t.w, t.h);
         ctx.strokeStyle = "#000";
         ctx.lineWidth = 4;
         ctx.strokeRect(t.x, t.y, t.w, t.h);
-
-        ctx.font = "50px 微软雅黑";
+        ctx.font = "46px 微软雅黑";
         ctx.fillStyle = "#d32f2f";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText(t.icon, t.x + t.w/2, t.y + t.h/2);
+        ctx.fillText(t.icon, t.x + t.w / 2, t.y + t.h / 2);
     });
 }
 
-canvas.onclick = function(e) {
-    if (isBusy) return;
-    let rect = canvas.getBoundingClientRect();
-    let x = e.clientX - rect.left;
-    let y = e.clientY - rect.top;
+// 画连线
+function drawLine(p1, p2) {
+    ctx.strokeStyle = "#00c853";
+    ctx.lineWidth = 6;
+    ctx.beginPath();
+    ctx.moveTo(p1.x + p1.w / 2, p1.y + p1.h / 2);
+    ctx.lineTo(p2.x + p2.w / 2, p2.y + p2.h / 2);
+    ctx.stroke();
+}
 
-    let clickTile = tiles.find(t => 
-        t.visible && !t.matched &&
-        x > t.x && x < t.x + t.w &&
-        y > t.y && y < t.y + t.h
-    );
-    if (!clickTile) return;
+// 核心：标准连连看连通判断（0/1/2个弯）
+function canConnect(a, b) {
+    if (a === b || a.icon !== b.icon || !a.show || !b.show) return false;
+    let path = findPath(a.row, a.col, b.row, b.col);
+    return path !== null;
+}
+
+// 0弯、1弯、2弯 路径检测
+function findPath(r1, c1, r2, c2) {
+    const g = gridSize;
+    function isEmpty(r, c) {
+        if (r < 0 || r >= g || c < 0 || c >= g) return true;
+        let t = tiles[r * g + c];
+        return !t.show || t.matched;
+    }
+    // 0弯
+    if (r1 === r2) {
+        let min = Math.min(c1, c2), max = Math.max(c1, c2);
+        for (let c = min + 1; c < max; c++) if (!isEmpty(r1, c)) return null;
+        return true;
+    }
+    if (c1 === c2) {
+        let min = Math.min(r1, r2), max = Math.max(r1, r2);
+        for (let r = min + 1; r < max; r++) if (!isEmpty(r, c1)) return null;
+        return true;
+    }
+    // 1弯
+    if (isEmpty(r1, c2) && isEmpty(r1, c2) && isEmpty(r2, c1)) {
+        if (isEmpty(r1, c2) && isEmpty(r2, c1)) return true;
+    }
+    // 2弯
+    for (let r = 0; r < g; r++) {
+        if (isEmpty(r, c1) && isEmpty(r, c2)) {
+            let ok = true;
+            for (let cr = Math.min(r1, r) + 1; cr < Math.max(r1, r); cr++) if (!isEmpty(cr, c1)) { ok = false; break; }
+            for (let cr = Math.min(r, r2) + 1; cr < Math.max(r, r2); cr++) if (!isEmpty(cr, c2)) { ok = false; break; }
+            for (let cc = Math.min(c1, c2) + 1; cc < Math.max(c1, c2); cc++) if (!isEmpty(r, cc)) { ok = false; break; }
+            if (ok) return true;
+        }
+    }
+    for (let c = 0; c < g; c++) {
+        if (isEmpty(r1, c) && isEmpty(r2, c)) {
+            let ok = true;
+            for (let cc = Math.min(c1, c) + 1; cc < Math.max(c1, c); cc++) if (!isEmpty(r1, cc)) { ok = false; break; }
+            for (let cc = Math.min(c, c2) + 1; cc < Math.max(c, c2); cc++) if (!isEmpty(r2, cc)) { ok = false; break; }
+            for (let cr = Math.min(r1, r2) + 1; cr < Math.max(r1, r2); cr++) if (!isEmpty(cr, c)) { ok = false; break; }
+            if (ok) return true;
+        }
+    }
+    return null;
+}
+
+// 点击
+canvas.onclick = e => {
+    if (isProcessing) return;
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+
+    let t = tiles.find(s => s.show && mx > s.x && mx < s.x + s.w && my > s.y && my < s.y + s.h);
+    if (!t) return;
 
     if (!first) {
-        first = clickTile;
-        ctx.strokeStyle = "#388e3c";
+        first = t;
+        ctx.strokeStyle = "#ff9800";
         ctx.lineWidth = 6;
-        ctx.strokeRect(first.x, first.y, first.w, first.h);
+        ctx.strokeRect(t.x, t.y, t.w, t.h);
         return;
     }
 
-    if (first === clickTile) return;
-
-    isBusy = true;
-    if (first.icon === clickTile.icon) {
-        first.matched = true;
-        clickTile.matched = true;
-        first.visible = false;
-        clickTile.visible = false;
+    if (first === t) return;
+    if (!canConnect(first, t)) {
+        drawAll();
+        first = null;
+        return;
     }
 
+    isProcessing = true;
+    drawLine(first, t);
+
     setTimeout(() => {
+        first.matched = true;
+        t.matched = true;
+        first.show = false;
+        t.show = false;
         first = null;
-        isBusy = false;
-        draw();
+        isProcessing = false;
+        drawAll();
         checkWin();
-    }, 300);
+    }, 400);
 };
 
+// 通关
 function checkWin() {
-    let allDone = tiles.every(t => t.matched);
-    if (!allDone) return;
-
+    if (tiles.some(s => s.show && !s.matched)) return;
     setTimeout(() => {
-        if (currentLevel < LEVEL_NAMES.length - 1) {
-            alert(`✅ 恭喜过关！升级到：${LEVEL_NAMES[currentLevel + 1]}`);
-            startLevel(currentLevel + 1);
+        if (currentLevel < 4) {
+            alert(`✅ 恭喜通关！\n进入：${LEVEL_NAMES[currentLevel + 1]}`);
+            startGame(currentLevel + 1);
         } else {
-            alert("🏆 恭喜你！已经达到最高段位：宗师！");
+            alert("🏆 恭喜！你已成为最高段位：宗师！");
         }
-    }, 500);
+    }, 600);
 }
 
 function restartGame() {
-    startLevel(currentLevel);
+    startGame(currentLevel);
 }
 
-window.onload = () => startLevel(0);
+window.onload = () => startGame(0);
 </script>
 </body>
 </html>
