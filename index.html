@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>老年休闲游戏中心</title>
+    <title>老年连连看</title>
     <style>
         * {
             margin: 0;
@@ -12,412 +12,178 @@
             font-family: "微软雅黑", sans-serif;
         }
         body {
-            background: #f5f5f5;
+            background: #f9f9f9;
+            text-align: center;
             padding: 20px;
         }
-        .header {
-            text-align: center;
-            margin-bottom: 40px;
-        }
-        .header h1 {
+        .title {
             font-size: 50px;
-            color: #222;
             font-weight: bold;
-        }
-        .game-container {
-            display: flex;
-            justify-content: center;
-            gap: 50px;
-            flex-wrap: wrap;
-            margin-bottom: 50px;
-        }
-        .game-card {
-            width: 320px;
-            height: 380px;
-            background: #fff;
-            border: 6px solid #ff9800;
-            border-radius: 20px;
-            text-align: center;
-            padding: 30px 20px;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
-        .game-card:hover {
-            transform: scale(1.05);
-        }
-        .game-card img {
-            width: 200px;
-            height: 200px;
+            color: #000;
             margin-bottom: 20px;
         }
-        .game-card .title {
+        .level-text {
             font-size: 36px;
             color: #d32f2f;
             font-weight: bold;
-            margin-bottom: 10px;
+            margin-bottom: 30px;
         }
-        .game-card .level {
-            font-size: 24px;
-            color: #666;
+        #canvas {
+            border: 10px solid #333;
+            background: white;
+            border-radius: 10px;
         }
-        .game-area {
-            display: none;
-            text-align: center;
-        }
-        .back-btn {
+        .reset-btn {
             font-size: 32px;
-            padding: 15px 40px;
+            padding: 20px 40px;
             background: #ff5722;
             color: white;
             border: none;
             border-radius: 15px;
-            margin-bottom: 30px;
+            margin-top: 30px;
             cursor: pointer;
-        }
-        .game-title {
-            font-size: 40px;
-            color: #222;
-            margin-bottom: 20px;
-        }
-        .level-info {
-            font-size: 28px;
-            color: #388e3c;
-            margin-bottom: 20px;
-        }
-        #game-canvas {
-            border: 8px solid #333;
-            border-radius: 10px;
-            background: #fff;
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>老年休闲游戏中心</h1>
-    </div>
 
-    <div class="game-container" id="game-list">
-        <div class="game-card" onclick="startGame(1)">
-            <img src="https://pic.588ku.com/element_origin_min_pic/19/03/17/5335b7a0e21541584868577295815469.jpg" alt="连连看">
-            <div class="title">连连看</div>
-            <div class="level">当前段位：新手</div>
-        </div>
-        <div class="game-card" onclick="startGame(2)">
-            <img src="https://pic.588ku.com/element_origin_min_pic/21/01/07/86587691416141188658577295815469.jpg" alt="斗地主">
-            <div class="title">斗地主</div>
-            <div class="level">当前段位：新手</div>
-        </div>
-        <div class="game-card" onclick="startGame(3)">
-            <img src="https://pic.588ku.com/element_origin_min_pic/18/08/08/74587691416141088658577295815469.jpg" alt="象棋">
-            <div class="title">中国象棋</div>
-            <div class="level">当前段位：新手</div>
-        </div>
-    </div>
+    <div class="title">🧡 老年休闲连连看 🧡</div>
+    <div class="level-text" id="level-info">当前段位：新手</div>
 
-    <div class="game-area" id="game-area">
-        <button class="back-btn" onclick="backHome()">返回首页</button>
-        <div class="game-title" id="game-name"></div>
-        <div class="level-info" id="game-level"></div>
-        <canvas id="game-canvas" width="800" height="600"></canvas>
-    </div>
+    <canvas id="canvas" width="900" height="700"></canvas>
+    <br>
+    <button class="reset-btn" onclick="restartGame()">重新开始这一局</button>
 
 <script>
-const levels = ["新手", "入门", "熟练", "大师", "宗师"];
-let gameData = {
-    1: { name: "连连看", level: 0 },
-    2: { name: "斗地主", level: 0 },
-    3: { name: "中国象棋", level: 0 }
-};
-const canvas = document.getElementById("game-canvas");
+const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
-function startGame(gameId) {
-    document.getElementById("game-list").style.display = "none";
-    document.getElementById("game-area").style.display = "block";
-    const game = gameData[gameId];
-    document.getElementById("game-name").innerText = game.name;
-    document.getElementById("game-level").innerText = `当前段位：${levels[game.level]} | 完成任务即可晋级`;
+const LEVEL_NAMES = ["新手", "入门", "熟练", "大师", "宗师"];
+let currentLevel = 0;
+
+let tiles = [];
+let first = null;
+let isBusy = false;
+
+const ICONS = ["🍎", "🍐", "🍊", "🍋", "🍌", "🍉", "🍇", "🍓", "🍒", "🍑", "🥭", "🥥"];
+
+function startLevel(level) {
+    currentLevel = level;
+    document.getElementById("level-info").innerText = `当前段位：${LEVEL_NAMES[level]}`;
+
+    let size = 4 + level;
+    if (size > 8) size = 8;
+    createGame(size);
+}
+
+function createGame(gridSize) {
+    tiles = [];
+    first = null;
+    isBusy = false;
+
+    let total = gridSize * gridSize;
+    let pairCount = total / 2;
+    let selected = ICONS.slice(0, pairCount);
+    let arr = [...selected, ...selected];
+    arr.sort(() => Math.random() - 0.5);
+
+    let tileSize = 90;
+    let startX = (canvas.width - gridSize * tileSize) / 2;
+    let startY = 100;
+
+    for (let row = 0; row < gridSize; row++) {
+        for (let col = 0; col < gridSize; col++) {
+            let index = row * gridSize + col;
+            tiles.push({
+                x: startX + col * tileSize,
+                y: startY + row * tileSize,
+                w: tileSize - 8,
+                h: tileSize - 8,
+                icon: arr[index],
+                matched: false,
+                visible: true
+            });
+        }
+    }
+    draw();
+}
+
+function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    loadGame(gameId);
+    tiles.forEach(t => {
+        if (!t.visible) return;
+        ctx.fillStyle = t.matched ? "#a5d6ff" : "#ffffff";
+        ctx.fillRect(t.x, t.y, t.w, t.h);
+        ctx.strokeStyle = "#000";
+        ctx.lineWidth = 4;
+        ctx.strokeRect(t.x, t.y, t.w, t.h);
+
+        ctx.font = "50px 微软雅黑";
+        ctx.fillStyle = "#d32f2f";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(t.icon, t.x + t.w/2, t.y + t.h/2);
+    });
 }
 
-function backHome() {
-    document.getElementById("game-area").style.display = "none";
-    document.getElementById("game-list").style.display = "flex";
-}
+canvas.onclick = function(e) {
+    if (isBusy) return;
+    let rect = canvas.getBoundingClientRect();
+    let x = e.clientX - rect.left;
+    let y = e.clientY - rect.top;
 
-function levelUp(gameId) {
-    if (gameData[gameId].level < levels.length - 1) {
-        gameData[gameId].level++;
-        alert("恭喜晋级！新段位：" + levels[gameData[gameId].level]);
-        document.getElementById("game-level").innerText = `当前段位：${levels[gameData[gameId].level]} | 完成任务即可晋级`;
-    } else {
-        alert("恭喜！已达到最高段位：宗师！");
+    let clickTile = tiles.find(t => 
+        t.visible && !t.matched &&
+        x > t.x && x < t.x + t.w &&
+        y > t.y && y < t.y + t.h
+    );
+    if (!clickTile) return;
+
+    if (!first) {
+        first = clickTile;
+        ctx.strokeStyle = "#388e3c";
+        ctx.lineWidth = 6;
+        ctx.strokeRect(first.x, first.y, first.w, first.h);
+        return;
     }
-}
 
-function loadGame(gameId) {
-    if (gameId === 1) {
-        const level = gameData[1].level;
-        const gridSize = 4 + level;
-        const tileSize = 80;
-        const tiles = [];
-        let firstTile = null;
-        let isProcessing = false;
-        const images = ["🍎", "🍐", "🍊", "🍋", "🍌", "🍉", "🍇", "🍓", "🍒", "🍑", "🥭", "🥥", "🥝", "🍅", "🥑", "🍆"];
-        const selectedImages = images.slice(0, gridSize * gridSize / 2);
-        const gameImages = [...selectedImages, ...selectedImages].sort(() => Math.random() - 0.5);
+    if (first === clickTile) return;
 
-        for (let i = 0; i < gridSize; i++) {
-            for (let j = 0; j < gridSize; j++) {
-                tiles.push({
-                    x: 100 + j * tileSize,
-                    y: 100 + i * tileSize,
-                    width: tileSize - 10,
-                    height: tileSize - 10,
-                    value: gameImages[i * gridSize + j],
-                    matched: false,
-                    visible: true
-                });
-            }
-        }
+    isBusy = true;
+    if (first.icon === clickTile.icon) {
+        first.matched = true;
+        clickTile.matched = true;
+        first.visible = false;
+        clickTile.visible = false;
+    }
 
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.font = "36px 微软雅黑";
-            ctx.fillStyle = "#222";
-            ctx.textAlign = "center";
-            ctx.fillText(`连连看 - ${levels[level]}`, 400, 50);
-            ctx.fillText(`剩余: ${tiles.filter(t => !t.matched).length / 2}对`, 400, 80);
-            tiles.forEach(tile => {
-                if (!tile.visible) return;
-                ctx.fillStyle = tile.matched ? "#90caf9" : "#fff";
-                ctx.fillRect(tile.x, tile.y, tile.width, tile.height);
-                ctx.strokeRect(tile.x, tile.y, tile.width, tile.height);
-                ctx.fillStyle = "#d32f2f";
-                ctx.textAlign = "center";
-                ctx.textBaseline = "middle";
-                ctx.fillText(tile.value, tile.x + tile.width / 2, tile.y + tile.height / 2);
-            });
-        }
-
-        function checkMatch(t1, t2) {
-            if (t1.value === t2.value && !t1.matched && !t2.matched) {
-                t1.matched = true;
-                t2.matched = true;
-                if (tiles.every(t => t.matched)) {
-                    setTimeout(() => levelUp(1), 500);
-                }
-                return true;
-            }
-            return false;
-        }
-
-        canvas.onclick = (e) => {
-            if (isProcessing) return;
-            const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            const tile = tiles.find(t => t.visible && x > t.x && x < t.x + t.width && y > t.y && y < t.y + t.height);
-            if (!tile) return;
-            if (firstTile && firstTile === tile) return;
-
-            if (!firstTile) {
-                firstTile = tile;
-                ctx.strokeStyle = "#388e3c";
-                ctx.lineWidth = 4;
-                ctx.strokeRect(firstTile.x, firstTile.y, firstTile.width, firstTile.height);
-            } else {
-                isProcessing = true;
-                if (checkMatch(firstTile, tile)) {
-                    setTimeout(() => {
-                        firstTile.visible = false;
-                        tile.visible = false;
-                        draw();
-                        firstTile = null;
-                        isProcessing = false;
-                    }, 500);
-                } else {
-                    setTimeout(() => {
-                        draw();
-                        firstTile = null;
-                        isProcessing = false;
-                    }, 500);
-                }
-            }
-        };
+    setTimeout(() => {
+        first = null;
+        isBusy = false;
         draw();
-    }
+        checkWin();
+    }, 300);
+};
 
-    if (gameId === 2) {
-        const level = gameData[2].level;
-        let wins = 0;
-        const requiredWins = 2 + level;
+function checkWin() {
+    let allDone = tiles.every(t => t.matched);
+    if (!allDone) return;
 
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.font = "36px 微软雅黑";
-            ctx.fillStyle = "#222";
-            ctx.textAlign = "center";
-            ctx.fillText(`斗地主 - ${levels[level]}`, 400, 50);
-            ctx.fillText(`赢 ${requiredWins} 局晋级 | 当前赢：${wins}`, 400, 100);
-            ctx.fillStyle = "#8b4513";
-            for (let i = 0; i < 3; i++) {
-                ctx.fillRect(300 + i * 60, 150, 50, 80);
-                ctx.strokeRect(300 + i * 60, 150, 50, 80);
-            }
-            ctx.fillStyle = "#fff";
-            for (let i = 0; i < 17; i++) {
-                ctx.fillRect(100 + i * 40, 450, 35, 60);
-                ctx.strokeRect(100 + i * 40, 450, 35, 60);
-            }
-            ctx.fillStyle = "#4caf50";
-            ctx.fillRect(350, 550, 100, 50);
-            ctx.strokeRect(350, 550, 100, 50);
-            ctx.fillStyle = "#fff";
-            ctx.font = "28px 微软雅黑";
-            ctx.fillText("出牌", 400, 585);
+    setTimeout(() => {
+        if (currentLevel < LEVEL_NAMES.length - 1) {
+            alert(`✅ 恭喜过关！升级到：${LEVEL_NAMES[currentLevel + 1]}`);
+            startLevel(currentLevel + 1);
+        } else {
+            alert("🏆 恭喜你！已经达到最高段位：宗师！");
         }
-
-        canvas.onclick = (e) => {
-            const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            if (x > 350 && x < 450 && y > 550 && y < 600) {
-                if (Math.random() > 0.3) {
-                    wins++;
-                    alert(`本局胜利！当前赢：${wins}/${requiredWins}`);
-                    if (wins >= requiredWins) {
-                        levelUp(2);
-                        wins = 0;
-                    }
-                } else {
-                    alert("本局失败，再接再厉！");
-                }
-                draw();
-            }
-        };
-        draw();
-    }
-
-    if (gameId === 3) {
-        const level = gameData[3].level;
-        const cellSize = 60;
-        const startX = 100;
-        const startY = 50;
-        let selectedPiece = null;
-        let isRedTurn = true;
-        const pieces = [
-            {x:0,y:0,type:"帅",color:"red"},{x:2,y:0,type:"士",color:"red"},{x:4,y:0,type:"士",color:"red"},
-            {x:1,y:0,type:"相",color:"red"},{x:3,y:0,type:"相",color:"red"},{x:0,y:2,type:"马",color:"red"},
-            {x:4,y:2,type:"马",color:"red"},{x:0,y:3,type:"车",color:"red"},{x:4,y:3,type:"车",color:"red"},
-            {x:1,y:3,type:"炮",color:"red"},{x:3,y:3,type:"炮",color:"red"},{x:0,y:4,type:"兵",color:"red"},
-            {x:1,y:4,type:"兵",color:"red"},{x:2,y:4,type:"兵",color:"red"},{x:3,y:4,type:"兵",color:"red"},
-            {x:4,y:4,type:"兵",color:"red"},{x:0,y:9,type:"将",color:"black"},{x:2,y:9,type:"士",color:"black"},
-            {x:4,y:9,type:"士",color:"black"},{x:1,y:9,type:"象",color:"black"},{x:3,y:9,type:"象",color:"black"},
-            {x:0,y:7,type:"马",color:"black"},{x:4,y:7,type:"马",color:"black"},{x:0,y:6,type:"车",color:"black"},
-            {x:4,y:6,type:"车",color:"black"},{x:1,y:6,type:"炮",color:"black"},{x:3,y:6,type:"炮",color:"black"},
-            {x:0,y:5,type:"卒",color:"black"},{x:1,y:5,type:"卒",color:"black"},{x:2,y:5,type:"卒",color:"black"},
-            {x:3,y:5,type:"卒",color:"black"},{x:4,y:5,type:"卒",color:"black"}
-        ];
-
-        function drawBoard() {
-            ctx.fillStyle = "#cd853f";
-            ctx.fillRect(startX, startY, 5 * cellSize, 10 * cellSize);
-            for (let i = 0; i <= 10; i++) {
-                ctx.beginPath();
-                ctx.moveTo(startX, startY + i * cellSize);
-                ctx.lineTo(startX + 5 * cellSize, startY + i * cellSize);
-                ctx.stroke();
-            }
-            for (let i = 0; i <= 5; i++) {
-                ctx.beginPath();
-                ctx.moveTo(startX + i * cellSize, startY);
-                ctx.lineTo(startX + i * cellSize, startY + 10 * cellSize);
-                ctx.stroke();
-            }
-            ctx.beginPath();
-            ctx.moveTo(startX + 1 * cellSize, startY);
-            ctx.lineTo(startX + 3 * cellSize, startY + 2 * cellSize);
-            ctx.moveTo(startX + 3 * cellSize, startY);
-            ctx.lineTo(startX + 1 * cellSize, startY + 2 * cellSize);
-            ctx.moveTo(startX + 1 * cellSize, startY + 8 * cellSize);
-            ctx.lineTo(startX + 3 * cellSize, startY + 10 * cellSize);
-            ctx.moveTo(startX + 3 * cellSize, startY + 8 * cellSize);
-            ctx.lineTo(startX + 1 * cellSize, startY + 10 * cellSize);
-            ctx.stroke();
-        }
-
-        function drawPieces() {
-            pieces.forEach(p => {
-                const x = startX + p.x * cellSize;
-                const y = startY + p.y * cellSize;
-                ctx.fillStyle = p.color === "red" ? "#d32f2f" : "#000";
-                ctx.beginPath();
-                ctx.arc(x, y, cellSize / 2 - 5, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.stroke();
-                ctx.fillStyle = "#fff";
-                ctx.font = "28px 微软雅黑";
-                ctx.textAlign = "center";
-                ctx.textBaseline = "middle";
-                ctx.fillText(p.type, x, y);
-                if (selectedPiece === p) {
-                    ctx.strokeStyle = "#388e3c";
-                    ctx.lineWidth = 4;
-                    ctx.beginPath();
-                    ctx.arc(x, y, cellSize / 2, 0, Math.PI * 2);
-                    ctx.stroke();
-                }
-            });
-        }
-
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            ctx.font = "36px 微软雅黑";
-            ctx.fillStyle = "#222";
-            ctx.textAlign = "center";
-            ctx.fillText(`中国象棋 - ${levels[level]}`, 400, 30);
-            drawBoard();
-            drawPieces();
-        }
-
-        function movePiece(p, x, y) {
-            const target = pieces.find(p2 => p2.x === x && p2.y === y);
-            if (target && target.color !== p.color) {
-                if ((target.type === "将" && p.color === "red") || (target.type === "帅" && p.color === "black")) {
-                    alert("将军！你赢了！");
-                    levelUp(3);
-                    return;
-                }
-                pieces.splice(pieces.indexOf(target), 1);
-            }
-            p.x = x;
-            p.y = y;
-            isRedTurn = !isRedTurn;
-        }
-
-        canvas.onclick = (e) => {
-            const rect = canvas.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            const boardX = Math.round((x - startX) / cellSize);
-            const boardY = Math.round((y - startY) / cellSize);
-            if (boardX < 0 || boardX > 4 || boardY < 0 || boardY > 9) return;
-            const clicked = pieces.find(p => p.x === boardX && p.y === boardY);
-            if (clicked) {
-                if ((isRedTurn && clicked.color === "red") || (!isRedTurn && clicked.color === "black")) {
-                    selectedPiece = clicked;
-                }
-            } else if (selectedPiece) {
-                movePiece(selectedPiece, boardX, boardY);
-                selectedPiece = null;
-            }
-            draw();
-        };
-        draw();
-    }
+    }, 500);
 }
+
+function restartGame() {
+    startLevel(currentLevel);
+}
+
+window.onload = () => startLevel(0);
 </script>
 </body>
 </html>
