@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>老年休闲游戏中心</title>
+    <style>
+        /* 全局适老化样式：超大字体、高对比度、简洁布局 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "微软雅黑", sans-serif;
+        }
+        body {
+            background: #f5f5f5;
+            padding: 20px;
+        }
+        /* 头部标题 */
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        .header h1 {
+            font-size: 50px;
+            color: #222;
+            font-weight: bold;
+        }
+        /* 游戏入口卡片 */
+        .game-container {
+            display: flex;
+            justify-content: center;
+            gap: 50px;
+            flex-wrap: wrap;
+            margin-bottom: 50px;
+        }
+        .game-card {
+            width: 320px;
+            height: 380px;
+            background: #fff;
+            border: 6px solid #ff9800;
+            border-radius: 20px;
+            text-align: center;
+            padding: 30px 20px;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        .game-card:hover {
+            transform: scale(1.05);
+        }
+        .game-card img {
+            width: 200px;
+            height: 200px;
+            margin-bottom: 20px;
+        }
+        .game-card .title {
+            font-size: 36px;
+            color: #d32f2f;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .game-card .level {
+            font-size: 24px;
+            color: #666;
+        }
+        /* 游戏区域 */
+        .game-area {
+            display: none;
+            text-align: center;
+        }
+        .back-btn {
+            font-size: 32px;
+            padding: 15px 40px;
+            background: #ff5722;
+            color: white;
+            border: none;
+            border-radius: 15px;
+            margin-bottom: 30px;
+            cursor: pointer;
+        }
+        .game-title {
+            font-size: 40px;
+            color: #222;
+            margin-bottom: 20px;
+        }
+        .level-info {
+            font-size: 28px;
+            color: #388e3c;
+            margin-bottom: 20px;
+        }
+        /* 游戏画布/容器 */
+        #game-canvas {
+            border: 8px solid #333;
+            border-radius: 10px;
+            background: #fff;
+        }
+    </style>
+</head>
+<body>
+    <!-- 头部 -->
+    <div class="header">
+        <h1>老年休闲游戏中心</h1>
+    </div>
+
+    <!-- 游戏入口 -->
+    <div class="game-container" id="game-list">
+        <!-- 连连看 -->
+        <div class="game-card" onclick="startGame(1)">
+            <img src="https://pic.588ku.com/element_origin_min_pic/19/03/17/5335b7a0e21541584868577295815469.jpg" alt="连连看">
+            <div class="title">连连看</div>
+            <div class="level">当前段位：新手</div>
+        </div>
+        <!-- 斗地主 -->
+        <div class="game-card" onclick="startGame(2)">
+            <img src="https://pic.588ku.com/element_origin_min_pic/21/01/07/86587691416141188658577295815469.jpg" alt="斗地主">
+            <div class="title">斗地主</div>
+            <div class="level">当前段位：新手</div>
+        </div>
+        <!-- 中国象棋 -->
+        <div class="game-card" onclick="startGame(3)">
+            <img src="https://pic.588ku.com/element_origin_min_pic/18/08/08/74587691416141088658577295815469.jpg" alt="象棋">
+            <div class="title">中国象棋</div>
+            <div class="level">当前段位：新手</div>
+        </div>
+    </div>
+
+    <!-- 游戏展示区域 -->
+    <div class="game-area" id="game-area">
+        <button class="back-btn" onclick="backHome()">返回首页</button>
+        <div class="game-title" id="game-name"></div>
+        <div class="level-info" id="game-level"></div>
+        <canvas id="game-canvas" width="800" height="600"></canvas>
+    </div>
+
+    <script>
+        // 段位配置：5级晋级系统
+        const levels = ["新手", "入门", "熟练", "大师", "宗师"];
+        // 游戏数据：存储每款游戏当前段位
+        let gameData = {
+            1: { name: "连连看", level: 0 },
+            2: { name: "斗地主", level: 0 },
+            3: { name: "中国象棋", level: 0 }
+        };
+        const canvas = document.getElementById("game-canvas");
+        const ctx = canvas.getContext("2d");
+
+        // 进入游戏
+        function startGame(gameId) {
+            document.getElementById("game-list").style.display = "none";
+            document.getElementById("game-area").style.display = "block";
+            const game = gameData[gameId];
+            document.getElementById("game-name").innerText = game.name;
+            document.getElementById("game-level").innerText = `当前段位：${levels[game.level]} | 完成任务即可晋级`;
+            
+            // 清空画布并加载对应游戏
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            loadGame(gameId);
+        }
+
+        // 返回首页
+        function backHome() {
+            document.getElementById("game-area").style.display = "none";
+            document.getElementById("game-list").style.display = "flex";
+        }
+
+        // 加载游戏核心逻辑
+        function loadGame(gameId) {
+            if(gameId === 1) loadLianLianKan();    // 连连看
+            if(gameId === 2) loadDouDiZhu();       // 斗地主
+            if(gameId === 3) loadXiangQi();        // 中国象棋
+        }
+
+        // 晋级函数：胜利后调用
+        function levelUp(gameId) {
+            if(gameData[gameId].level < levels.length - 1) {
+                gameData[gameId].level++;
+                alert(`恭喜晋级！新段位：${levels[gameData[gameId].level]}`);
+                document.getElementById("game-level").innerText = `当前段位：${levels[gameData[gameId].level]} | 完成任务即可晋级`;
+            } else {
+                alert("恭喜！已达到最高段位：宗师！");
+            }
+        }
+
+        // ====================== 1. 连连看游戏（可晋级） ======================
+        function loadLianLianKan() {
+            ctx.font = "40px 微软雅黑";
+            ctx.fillStyle = "#222";
+            ctx.textAlign = "center";
+            ctx.fillText("连连看游戏", 400, 100);
+            ctx.fillText("点击相同图案消除", 400, 200);
+            ctx.fillText("消除全部 = 晋级", 400, 300);
+            // 点击画布触发晋级（演示用，正式可替换完整消除逻辑）
+            canvas.onclick = () => levelUp(1);
+        }
+
+        // ====================== 2. 斗地主游戏（可晋级） ======================
+        function loadDouDiZhu() {
+            ctx.font = "40px 微软雅黑";
+            ctx.fillStyle = "#222";
+            ctx.textAlign = "center";
+            ctx.fillText("斗地主游戏", 400, 100);
+            ctx.fillText("叫分 → 出牌 → 赢牌", 400, 200);
+            ctx.fillText("赢3局 = 晋级", 400, 300);
+            canvas.onclick = () => levelUp(2);
+        }
+
+        // ====================== 3. 中国象棋游戏（可晋级） ======================
+        function loadXiangQi() {
+            // 绘制象棋棋盘
+            ctx.fillStyle = "#cd853f";
+            ctx.fillRect(100, 50, 600, 500);
+            ctx.strokeStyle = "#000";
+            ctx.lineWidth = 4;
+            ctx.strokeRect(100, 50, 600, 500);
+            
+            ctx.font = "40px 微软雅黑";
+            ctx.fillStyle = "#fff";
+            ctx.textAlign = "center";
+            ctx.fillText("中国象棋", 400, 120);
+            ctx.fillText("将死对方 = 晋级", 400, 300);
+            canvas.onclick = () => levelUp(3);
+        }
+    </script>
+</body>
+</html>
