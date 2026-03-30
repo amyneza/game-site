@@ -182,44 +182,351 @@
         }
 
         // ====================== 1. 连连看游戏（可晋级） ======================
-        function loadLianLianKan() {
-            ctx.font = "40px 微软雅黑";
-            ctx.fillStyle = "#222";
+
+function loadLianLianKan() {
+    const level = gameData[1].level;
+    const gridSize = 4 + level; 
+    const tileSize = 80; 
+    const tiles = [];
+    let firstTile = null;
+    let isProcessing = false;
+
+    // 生成图案数组
+    const images = [
+        "🍎", "🍐", "🍊", "🍋", "🍌", "🍉", "🍇", "🍓",
+        "🍒", "🍑", "🥭", "🥥", "🥝", "🍅", "🥑", "🍆"
+    ];
+    const selectedImages = images.slice(0, gridSize * gridSize / 2);
+    const gameImages = [...selectedImages, ...selectedImages].sort(() => Math.random() - 0.5);
+
+    // 初始化 tiles
+    for (let i = 0; i < gridSize; i++) {
+        for (let j = 0; j < gridSize; j++) {
+            tiles.push({
+                x: 100 + j * tileSize,
+                y: 100 + i * tileSize,
+                width: tileSize - 10,
+                height: tileSize - 10,
+                value: gameImages[i * gridSize + j],
+                matched: false,
+                visible: true
+            });
+        }
+    }
+
+    // 绘制连连看
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.font = "36px 微软雅黑";
+        ctx.fillStyle = "#222";
+        ctx.textAlign = "center";
+        ctx.fillText(`连连看 - ${levels[level]}`, 400, 50);
+        ctx.fillText(`剩余: ${tiles.filter(t => !t.matched).length / 2}对`, 400, 80);
+
+        tiles.forEach(tile => {
+            if (!tile.visible) return;
+            ctx.fillStyle(tile.matched ? "#90caf9" : "#fff");
+            ctx.fillRect(tile.x, tile.y, tile.width, tile.height);
+            ctx.strokeRect(tile.x, tile.y, tile.width, tile.height);
+            ctx.fillStyle("#d32f2f");
             ctx.textAlign = "center";
-            ctx.fillText("连连看游戏", 400, 100);
-            ctx.fillText("点击相同图案消除", 400, 200);
-            ctx.fillText("消除全部 = 晋级", 400, 300);
-            // 点击画布触发晋级（演示用，正式可替换完整消除逻辑）
-            canvas.onclick = () => levelUp(1);
+            ctx.textBaseline = "middle";
+            ctx.fillText(tile.value, tile.x + tile.width/2, tile.y + tile.height/2);
+        });
+    }
+
+    // 检查匹配
+    function checkMatch(tile1, tile2) {
+        if (tile1.value === tile2.value && !tile1.matched && !tile2.matched) {
+            tile1.matched = true;
+            tile2.matched = true;
+            if (tiles.every(t => t.matched)) {
+                setTimeout(() => levelUp(1), 500);
+            }
+            return true;
+        }
+        return false;
+    }
+
+    // 点击事件
+    canvas.onclick = (e) => {
+        if (isProcessing) return;
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        const clickedTile = tiles.find(tile => 
+            tile.visible && x > tile.x && x < tile.x + tile.width && 
+            y > tile.y && y < tile.y + tile.height
+        );
+
+        if (!clickedTile) return;
+        if (firstTile && firstTile === clickedTile) return;
+
+        if (!firstTile) {
+            firstTile = clickedTile;
+            ctx.strokeStyle("#388e3c");
+            ctx.lineWidth = 4;
+            ctx.strokeRect(firstTile.x, firstTile.y, firstTile.width, firstTile.height);
+        } else {
+            isProcessing = true;
+            if (checkMatch(firstTile, clickedTile)) {
+                setTimeout(() => {
+                    firstTile.visible = false;
+                    clickedTile.visible = false;
+                    draw();
+                    firstTile = null;
+                    isProcessing = false;
+                }, 500);
+            } else {
+                setTimeout(() => {
+                    draw();
+                    firstTile = null;
+                    isProcessing = false;
+                }, 500);
+            }
+        }
+    };
+
+    draw();
+}
+        // ====================== 2. 斗地主游戏（可晋级） ======================
+function loadDouDiZhu() {
+    const level = gameData[2].level;
+    let wins = 0;
+    const requiredWins = 2 + level; 
+
+    // 绘制斗地主界面
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.font = "36px 微软雅黑";
+        ctx.fillStyle = "#222";
+        ctx.textAlign = "center";
+        ctx.fillText(`斗地主 - ${levels[level]}`, 400, 50);
+        ctx.fillText(`赢 ${requiredWins} 局晋级 | 当前赢：${wins}`, 400, 100);
+
+        // 绘制底牌
+        ctx.fillStyle("#8b4513");
+        for (let i = 0; i < 3; i++) {
+            ctx.fillRect(300 + i * 60, 150, 50, 80);
+            ctx.strokeRect(300 + i * 60, 150, 50, 80);
         }
 
-        // ====================== 2. 斗地主游戏（可晋级） ======================
-        function loadDouDiZhu() {
-            ctx.font = "40px 微软雅黑";
-            ctx.fillStyle = "#222";
-            ctx.textAlign = "center";
-            ctx.fillText("斗地主游戏", 400, 100);
-            ctx.fillText("叫分 → 出牌 → 赢牌", 400, 200);
-            ctx.fillText("赢3局 = 晋级", 400, 300);
-            canvas.onclick = () => levelUp(2);
+        // 绘制玩家手牌
+        ctx.fillStyle("#fff");
+        for (let i = 0; i < 17; i++) {
+            ctx.fillRect(100 + i * 40, 450, 35, 60);
+            ctx.strokeRect(100 + i * 40, 450, 35, 60);
         }
+
+        // 绘制"出牌"按钮
+        ctx.fillStyle("#4caf50");
+        ctx.fillRect(350, 550, 100, 50);
+        ctx.strokeRect(350, 550, 100, 50);
+        ctx.fillStyle("#fff");
+        ctx.font = "28px 微软雅黑";
+        ctx.fillText("出牌", 400, 585);
+    }
+
+    // 点击出牌按钮
+    canvas.onclick = (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        // 判断是否点击出牌按钮
+        if (x > 350 && x < 450 && y > 550 && y < 600) {
+            // 随机输赢
+            const win = Math.random() > 0.3; 
+            if (win) {
+                wins++;
+                alert(`本局胜利！当前赢：${wins}/${requiredWins}`);
+                if (wins >= requiredWins) {
+                    levelUp(2);
+                    wins = 0;
+                }
+            } else {
+                alert("本局失败，再接再厉！");
+            }
+            draw();
+        }
+    };
+
+    draw();
+}
 
         // ====================== 3. 中国象棋游戏（可晋级） ======================
-        function loadXiangQi() {
-            // 绘制象棋棋盘
-            ctx.fillStyle = "#cd853f";
-            ctx.fillRect(100, 50, 600, 500);
-            ctx.strokeStyle = "#000";
-            ctx.lineWidth = 4;
-            ctx.strokeRect(100, 50, 600, 500);
-            
-            ctx.font = "40px 微软雅黑";
-            ctx.fillStyle = "#fff";
-            ctx.textAlign = "center";
-            ctx.fillText("中国象棋", 400, 120);
-            ctx.fillText("将死对方 = 晋级", 400, 300);
-            canvas.onclick = () => levelUp(3);
+function loadXiangQi() {
+    const level = gameData[3].level;
+    const boardSize = 800;
+    const cellSize = 60;
+    const startX = 100;
+    const startY = 50;
+    let selectedPiece = null;
+    let isRedTurn = true; 
+
+    // 棋子数据
+    const pieces = [
+        { x: 0, y: 0, type: "帅", color: "red" },
+        { x: 2, y: 0, type: "士", color: "red" },
+        { x: 4, y: 0, type: "士", color: "red" },
+        { x: 1, y: 0, type: "相", color: "red" },
+        { x: 3, y: 0, type: "相", color: "red" },
+        { x: 0, y: 2, type: "马", color: "red" },
+        { x: 4, y: 2, type: "马", color: "red" },
+        { x: 0, y: 3, type: "车", color: "red" },
+        { x: 4, y: 3, type: "车", color: "red" },
+        { x: 1, y: 3, type: "炮", color: "red" },
+        { x: 3, y: 3, type: "炮", color: "red" },
+        { x: 0, y: 4, type: "兵", color: "red" },
+        { x: 1, y: 4, type: "兵", color: "red" },
+        { x: 2, y: 4, type: "兵", color: "red" },
+        { x: 3, y: 4, type: "兵", color: "red" },
+        { x: 4, y: 4, type: "兵", color: "red" },
+        { x: 0, y: 9, type: "将", color: "black" },
+        { x: 2, y: 9, type: "士", color: "black" },
+        { x: 4, y: 9, type: "士", color: "black" },
+        { x: 1, y: 9, type: "象", color: "black" },
+        { x: 3, y: 9, type: "象", color: "black" },
+        { x: 0, y: 7, type: "马", color: "black" },
+        { x: 4, y: 7, type: "马", color: "black" },
+        { x: 0, y: 6, type: "车", color: "black" },
+        { x: 4, y: 6, type: "车", color: "black" },
+        { x: 1, y: 6, type: "炮", color: "black" },
+        { x: 3, y: 6, type: "炮", color: "black" },
+        { x: 0, y: 5, type: "卒", color: "black" },
+        { x: 1, y: 5, type: "卒", color: "black" },
+        { x: 2, y: 5, type: "卒", color: "black" },
+        { x: 3, y: 5, type: "卒", color: "black" },
+        { x: 4, y: 5, type: "卒", color: "black" }
+    ];
+
+    // 绘制棋盘
+    function drawBoard() {
+        ctx.fillStyle("#cd853f");
+        ctx.fillRect(startX, startY, 5 * cellSize, 10 * cellSize);
+        
+        // 画横线
+        for (let i = 0; i <= 10; i++) {
+            ctx.beginPath();
+            ctx.moveTo(startX, startY + i * cellSize);
+            ctx.lineTo(startX + 5 * cellSize, startY + i * cellSize);
+            ctx.stroke();
         }
+        
+        // 画竖线
+        for (let i = 0; i <= 5; i++) {
+            ctx.beginPath();
+            ctx.moveTo(startX + i * cellSize, startY);
+            ctx.lineTo(startX + i * cellSize, startY + 10 * cellSize);
+            ctx.stroke();
+        }
+        
+        // 画九宫格
+        ctx.beginPath();
+        ctx.moveTo(startX + 1 * cellSize, startY);
+        ctx.lineTo(startX + 3 * cellSize, startY + 2 * cellSize);
+        ctx.moveTo(startX + 3 * cellSize, startY);
+        ctx.lineTo(startX + 1 * cellSize, startY + 2 * cellSize);
+        ctx.moveTo(startX + 1 * cellSize, startY + 8 * cellSize);
+        ctx.lineTo(startX + 3 * cellSize, startY + 10 * cellSize);
+        ctx.moveTo(startX + 3 * cellSize, startY + 8 * cellSize);
+        ctx.lineTo(startX + 1 * cellSize, startY + 10 * cellSize);
+        ctx.stroke();
+    }
+
+    // 绘制棋子
+    function drawPieces() {
+        pieces.forEach(piece => {
+            const x = startX + piece.x * cellSize;
+            const y = startY + piece.y * cellSize;
+            ctx.fillStyle(piece.color === "red" ? "#d32f2f" : "#000");
+            ctx.beginPath();
+            ctx.arc(x, y, cellSize / 2 - 5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+            ctx.fillStyle("#fff");
+            ctx.font = "28px 微软雅黑";
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(piece.type, x, y);
+
+            // 选中效果
+            if (selectedPiece === piece) {
+                ctx.strokeStyle("#388e3c");
+                ctx.lineWidth = 4;
+                ctx.beginPath();
+                ctx.arc(x, y, cellSize / 2, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+        });
+    }
+
+    // 绘制整体
+    function draw() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        ctx.font = "36px 微软雅黑";
+        ctx.fillStyle = "#222";
+        ctx.textAlign = "center";
+        ctx.fillText(`中国象棋 - ${levels[level]}`, 400, 30);
+        drawBoard();
+        drawPieces();
+    }
+
+    // 移动棋子
+    function movePiece(piece, x, y) {
+        // 简单判断是否吃子
+        const targetPiece = pieces.find(p => p.x === x && p.y === y);
+        if (targetPiece && targetPiece.color !== piece.color) {
+            // 如果吃到对方"将/帅"，则胜利
+            if ((targetPiece.type === "将" && piece.color === "red") || 
+                (targetPiece.type === "帅" && piece.color === "black")) {
+                alert("将军！你赢了！");
+                levelUp(3);
+                return;
+            }
+            // 移除被吃的棋子
+            pieces.splice(pieces.indexOf(targetPiece), 1);
+        }
+        piece.x = x;
+        piece.y = y;
+        isRedTurn = !isRedTurn;
+    }
+
+    // 点击事件
+    canvas.onclick = (e) => {
+        const rect = canvas.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        // 计算点击的棋盘坐标
+        const boardX = Math.round((x - startX) / cellSize);
+        const boardY = Math.round((y - startY) / cellSize);
+
+        // 检查是否在棋盘内
+        if (boardX < 0 || boardX > 4 || boardY < 0 || boardY > 9) return;
+
+        // 查找点击的棋子
+        const clickedPiece = pieces.find(p => p.x === boardX && p.y === boardY);
+
+        if (clickedPiece) {
+            // 只能选择自己的棋子
+            if ((isRedTurn && clickedPiece.color === "red") || 
+                (!isRedTurn && clickedPiece.color === "black")) {
+                selectedPiece = clickedPiece;
+            }
+        } else if (selectedPiece) {
+            // 移动选中的棋子
+            movePiece(selectedPiece, boardX, boardY);
+            selectedPiece = null;
+        }
+
+        draw();
+    };
+
+    draw();
+}
+
     </script>
 </body>
 </html>
