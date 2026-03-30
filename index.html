@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>老年休闲游戏中心</title>
     <style>
-        /* 全局适老化样式：超大字体、高对比度、简洁布局 */
         * {
             margin: 0;
             padding: 0;
@@ -16,7 +15,6 @@
             background: #f5f5f5;
             padding: 20px;
         }
-        /* 头部标题 */
         .header {
             text-align: center;
             margin-bottom: 40px;
@@ -26,7 +24,6 @@
             color: #222;
             font-weight: bold;
         }
-        /* 游戏入口卡片 */
         .game-container {
             display: flex;
             justify-content: center;
@@ -63,7 +60,6 @@
             font-size: 24px;
             color: #666;
         }
-        /* 游戏区域 */
         .game-area {
             display: none;
             text-align: center;
@@ -88,7 +84,6 @@
             color: #388e3c;
             margin-bottom: 20px;
         }
-        /* 游戏画布/容器 */
         #game-canvas {
             border: 8px solid #333;
             border-radius: 10px;
@@ -97,26 +92,21 @@
     </style>
 </head>
 <body>
-    <!-- 头部 -->
     <div class="header">
         <h1>老年休闲游戏中心</h1>
     </div>
 
-    <!-- 游戏入口 -->
     <div class="game-container" id="game-list">
-        <!-- 连连看 -->
         <div class="game-card" onclick="startGame(1)">
             <img src="https://pic.588ku.com/element_origin_min_pic/19/03/17/5335b7a0e21541584868577295815469.jpg" alt="连连看">
             <div class="title">连连看</div>
             <div class="level">当前段位：新手</div>
         </div>
-        <!-- 斗地主 -->
         <div class="game-card" onclick="startGame(2)">
             <img src="https://pic.588ku.com/element_origin_min_pic/21/01/07/86587691416141188658577295815469.jpg" alt="斗地主">
             <div class="title">斗地主</div>
             <div class="level">当前段位：新手</div>
         </div>
-        <!-- 中国象棋 -->
         <div class="game-card" onclick="startGame(3)">
             <img src="https://pic.588ku.com/element_origin_min_pic/18/08/08/74587691416141088658577295815469.jpg" alt="象棋">
             <div class="title">中国象棋</div>
@@ -124,7 +114,6 @@
         </div>
     </div>
 
-    <!-- 游戏展示区域 -->
     <div class="game-area" id="game-area">
         <button class="back-btn" onclick="backHome()">返回首页</button>
         <div class="game-title" id="game-name"></div>
@@ -132,401 +121,303 @@
         <canvas id="game-canvas" width="800" height="600"></canvas>
     </div>
 
-    <script>
-        // 段位配置：5级晋级系统
-        const levels = ["新手", "入门", "熟练", "大师", "宗师"];
-        // 游戏数据：存储每款游戏当前段位
-        let gameData = {
-            1: { name: "连连看", level: 0 },
-            2: { name: "斗地主", level: 0 },
-            3: { name: "中国象棋", level: 0 }
-        };
-        const canvas = document.getElementById("game-canvas");
-        const ctx = canvas.getContext("2d");
+<script>
+const levels = ["新手", "入门", "熟练", "大师", "宗师"];
+let gameData = {
+    1: { name: "连连看", level: 0 },
+    2: { name: "斗地主", level: 0 },
+    3: { name: "中国象棋", level: 0 }
+};
+const canvas = document.getElementById("game-canvas");
+const ctx = canvas.getContext("2d");
 
-        // 进入游戏
-        function startGame(gameId) {
-            document.getElementById("game-list").style.display = "none";
-            document.getElementById("game-area").style.display = "block";
-            const game = gameData[gameId];
-            document.getElementById("game-name").innerText = game.name;
-            document.getElementById("game-level").innerText = `当前段位：${levels[game.level]} | 完成任务即可晋级`;
-            
-            // 清空画布并加载对应游戏
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            loadGame(gameId);
-        }
+function startGame(gameId) {
+    document.getElementById("game-list").style.display = "none";
+    document.getElementById("game-area").style.display = "block";
+    const game = gameData[gameId];
+    document.getElementById("game-name").innerText = game.name;
+    document.getElementById("game-level").innerText = `当前段位：${levels[game.level]} | 完成任务即可晋级`;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    loadGame(gameId);
+}
 
-        // 返回首页
-        function backHome() {
-            document.getElementById("game-area").style.display = "none";
-            document.getElementById("game-list").style.display = "flex";
-        }
+function backHome() {
+    document.getElementById("game-area").style.display = "none";
+    document.getElementById("game-list").style.display = "flex";
+}
 
-        // 加载游戏核心逻辑
-        function loadGame(gameId) {
-            if(gameId === 1) loadLianLianKan();    // 连连看
-            if(gameId === 2) loadDouDiZhu();       // 斗地主
-            if(gameId === 3) loadXiangQi();        // 中国象棋
-        }
+function levelUp(gameId) {
+    if (gameData[gameId].level < levels.length - 1) {
+        gameData[gameId].level++;
+        alert("恭喜晋级！新段位：" + levels[gameData[gameId].level]);
+        document.getElementById("game-level").innerText = `当前段位：${levels[gameData[gameId].level]} | 完成任务即可晋级`;
+    } else {
+        alert("恭喜！已达到最高段位：宗师！");
+    }
+}
 
-        // 晋级函数：胜利后调用
-        function levelUp(gameId) {
-            if(gameData[gameId].level < levels.length - 1) {
-                gameData[gameId].level++;
-                alert(`恭喜晋级！新段位：${levels[gameData[gameId].level]}`);
-                document.getElementById("game-level").innerText = `当前段位：${levels[gameData[gameId].level]} | 完成任务即可晋级`;
-            } else {
-                alert("恭喜！已达到最高段位：宗师！");
+function loadGame(gameId) {
+    if (gameId === 1) {
+        const level = gameData[1].level;
+        const gridSize = 4 + level;
+        const tileSize = 80;
+        const tiles = [];
+        let firstTile = null;
+        let isProcessing = false;
+        const images = ["🍎", "🍐", "🍊", "🍋", "🍌", "🍉", "🍇", "🍓", "🍒", "🍑", "🥭", "🥥", "🥝", "🍅", "🥑", "🍆"];
+        const selectedImages = images.slice(0, gridSize * gridSize / 2);
+        const gameImages = [...selectedImages, ...selectedImages].sort(() => Math.random() - 0.5);
+
+        for (let i = 0; i < gridSize; i++) {
+            for (let j = 0; j < gridSize; j++) {
+                tiles.push({
+                    x: 100 + j * tileSize,
+                    y: 100 + i * tileSize,
+                    width: tileSize - 10,
+                    height: tileSize - 10,
+                    value: gameImages[i * gridSize + j],
+                    matched: false,
+                    visible: true
+                });
             }
         }
 
-        // ====================== 1. 连连看游戏（可晋级） ======================
-
-function loadLianLianKan() {
-    const level = gameData[1].level;
-    const gridSize = 4 + level; 
-    const tileSize = 80; 
-    const tiles = [];
-    let firstTile = null;
-    let isProcessing = false;
-
-    // 生成图案数组
-    const images = [
-        "🍎", "🍐", "🍊", "🍋", "🍌", "🍉", "🍇", "🍓",
-        "🍒", "🍑", "🥭", "🥥", "🥝", "🍅", "🥑", "🍆"
-    ];
-    const selectedImages = images.slice(0, gridSize * gridSize / 2);
-    const gameImages = [...selectedImages, ...selectedImages].sort(() => Math.random() - 0.5);
-
-    // 初始化 tiles
-    for (let i = 0; i < gridSize; i++) {
-        for (let j = 0; j < gridSize; j++) {
-            tiles.push({
-                x: 100 + j * tileSize,
-                y: 100 + i * tileSize,
-                width: tileSize - 10,
-                height: tileSize - 10,
-                value: gameImages[i * gridSize + j],
-                matched: false,
-                visible: true
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.font = "36px 微软雅黑";
+            ctx.fillStyle = "#222";
+            ctx.textAlign = "center";
+            ctx.fillText(`连连看 - ${levels[level]}`, 400, 50);
+            ctx.fillText(`剩余: ${tiles.filter(t => !t.matched).length / 2}对`, 400, 80);
+            tiles.forEach(tile => {
+                if (!tile.visible) return;
+                ctx.fillStyle = tile.matched ? "#90caf9" : "#fff";
+                ctx.fillRect(tile.x, tile.y, tile.width, tile.height);
+                ctx.strokeRect(tile.x, tile.y, tile.width, tile.height);
+                ctx.fillStyle = "#d32f2f";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText(tile.value, tile.x + tile.width / 2, tile.y + tile.height / 2);
             });
         }
-    }
 
-    // 绘制连连看
-    function draw() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.font = "36px 微软雅黑";
-        ctx.fillStyle = "#222";
-        ctx.textAlign = "center";
-        ctx.fillText(`连连看 - ${levels[level]}`, 400, 50);
-        ctx.fillText(`剩余: ${tiles.filter(t => !t.matched).length / 2}对`, 400, 80);
-
-        tiles.forEach(tile => {
-            if (!tile.visible) return;
-            ctx.fillStyle(tile.matched ? "#90caf9" : "#fff");
-            ctx.fillRect(tile.x, tile.y, tile.width, tile.height);
-            ctx.strokeRect(tile.x, tile.y, tile.width, tile.height);
-            ctx.fillStyle("#d32f2f");
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillText(tile.value, tile.x + tile.width/2, tile.y + tile.height/2);
-        });
-    }
-
-    // 检查匹配
-    function checkMatch(tile1, tile2) {
-        if (tile1.value === tile2.value && !tile1.matched && !tile2.matched) {
-            tile1.matched = true;
-            tile2.matched = true;
-            if (tiles.every(t => t.matched)) {
-                setTimeout(() => levelUp(1), 500);
-            }
-            return true;
-        }
-        return false;
-    }
-
-    // 点击事件
-    canvas.onclick = (e) => {
-        if (isProcessing) return;
-        const rect = canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-
-        const clickedTile = tiles.find(tile => 
-            tile.visible && x > tile.x && x < tile.x + tile.width && 
-            y > tile.y && y < tile.y + tile.height
-        );
-
-        if (!clickedTile) return;
-        if (firstTile && firstTile === clickedTile) return;
-
-        if (!firstTile) {
-            firstTile = clickedTile;
-            ctx.strokeStyle("#388e3c");
-            ctx.lineWidth = 4;
-            ctx.strokeRect(firstTile.x, firstTile.y, firstTile.width, firstTile.height);
-        } else {
-            isProcessing = true;
-            if (checkMatch(firstTile, clickedTile)) {
-                setTimeout(() => {
-                    firstTile.visible = false;
-                    clickedTile.visible = false;
-                    draw();
-                    firstTile = null;
-                    isProcessing = false;
-                }, 500);
-            } else {
-                setTimeout(() => {
-                    draw();
-                    firstTile = null;
-                    isProcessing = false;
-                }, 500);
-            }
-        }
-    };
-
-    draw();
-}
-        // ====================== 2. 斗地主游戏（可晋级） ======================
-function loadDouDiZhu() {
-    const level = gameData[2].level;
-    let wins = 0;
-    const requiredWins = 2 + level; 
-
-    // 绘制斗地主界面
-    function draw() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.font = "36px 微软雅黑";
-        ctx.fillStyle = "#222";
-        ctx.textAlign = "center";
-        ctx.fillText(`斗地主 - ${levels[level]}`, 400, 50);
-        ctx.fillText(`赢 ${requiredWins} 局晋级 | 当前赢：${wins}`, 400, 100);
-
-        // 绘制底牌
-        ctx.fillStyle("#8b4513");
-        for (let i = 0; i < 3; i++) {
-            ctx.fillRect(300 + i * 60, 150, 50, 80);
-            ctx.strokeRect(300 + i * 60, 150, 50, 80);
-        }
-
-        // 绘制玩家手牌
-        ctx.fillStyle("#fff");
-        for (let i = 0; i < 17; i++) {
-            ctx.fillRect(100 + i * 40, 450, 35, 60);
-            ctx.strokeRect(100 + i * 40, 450, 35, 60);
-        }
-
-        // 绘制"出牌"按钮
-        ctx.fillStyle("#4caf50");
-        ctx.fillRect(350, 550, 100, 50);
-        ctx.strokeRect(350, 550, 100, 50);
-        ctx.fillStyle("#fff");
-        ctx.font = "28px 微软雅黑";
-        ctx.fillText("出牌", 400, 585);
-    }
-
-    // 点击出牌按钮
-    canvas.onclick = (e) => {
-        const rect = canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-
-        // 判断是否点击出牌按钮
-        if (x > 350 && x < 450 && y > 550 && y < 600) {
-            // 随机输赢
-            const win = Math.random() > 0.3; 
-            if (win) {
-                wins++;
-                alert(`本局胜利！当前赢：${wins}/${requiredWins}`);
-                if (wins >= requiredWins) {
-                    levelUp(2);
-                    wins = 0;
+        function checkMatch(t1, t2) {
+            if (t1.value === t2.value && !t1.matched && !t2.matched) {
+                t1.matched = true;
+                t2.matched = true;
+                if (tiles.every(t => t.matched)) {
+                    setTimeout(() => levelUp(1), 500);
                 }
-            } else {
-                alert("本局失败，再接再厉！");
+                return true;
             }
-            draw();
+            return false;
         }
-    };
 
-    draw();
-}
+        canvas.onclick = (e) => {
+            if (isProcessing) return;
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const tile = tiles.find(t => t.visible && x > t.x && x < t.x + t.width && y > t.y && y < t.y + t.height);
+            if (!tile) return;
+            if (firstTile && firstTile === tile) return;
 
-        // ====================== 3. 中国象棋游戏（可晋级） ======================
-function loadXiangQi() {
-    const level = gameData[3].level;
-    const boardSize = 800;
-    const cellSize = 60;
-    const startX = 100;
-    const startY = 50;
-    let selectedPiece = null;
-    let isRedTurn = true; 
-
-    // 棋子数据
-    const pieces = [
-        { x: 0, y: 0, type: "帅", color: "red" },
-        { x: 2, y: 0, type: "士", color: "red" },
-        { x: 4, y: 0, type: "士", color: "red" },
-        { x: 1, y: 0, type: "相", color: "red" },
-        { x: 3, y: 0, type: "相", color: "red" },
-        { x: 0, y: 2, type: "马", color: "red" },
-        { x: 4, y: 2, type: "马", color: "red" },
-        { x: 0, y: 3, type: "车", color: "red" },
-        { x: 4, y: 3, type: "车", color: "red" },
-        { x: 1, y: 3, type: "炮", color: "red" },
-        { x: 3, y: 3, type: "炮", color: "red" },
-        { x: 0, y: 4, type: "兵", color: "red" },
-        { x: 1, y: 4, type: "兵", color: "red" },
-        { x: 2, y: 4, type: "兵", color: "red" },
-        { x: 3, y: 4, type: "兵", color: "red" },
-        { x: 4, y: 4, type: "兵", color: "red" },
-        { x: 0, y: 9, type: "将", color: "black" },
-        { x: 2, y: 9, type: "士", color: "black" },
-        { x: 4, y: 9, type: "士", color: "black" },
-        { x: 1, y: 9, type: "象", color: "black" },
-        { x: 3, y: 9, type: "象", color: "black" },
-        { x: 0, y: 7, type: "马", color: "black" },
-        { x: 4, y: 7, type: "马", color: "black" },
-        { x: 0, y: 6, type: "车", color: "black" },
-        { x: 4, y: 6, type: "车", color: "black" },
-        { x: 1, y: 6, type: "炮", color: "black" },
-        { x: 3, y: 6, type: "炮", color: "black" },
-        { x: 0, y: 5, type: "卒", color: "black" },
-        { x: 1, y: 5, type: "卒", color: "black" },
-        { x: 2, y: 5, type: "卒", color: "black" },
-        { x: 3, y: 5, type: "卒", color: "black" },
-        { x: 4, y: 5, type: "卒", color: "black" }
-    ];
-
-    // 绘制棋盘
-    function drawBoard() {
-        ctx.fillStyle("#cd853f");
-        ctx.fillRect(startX, startY, 5 * cellSize, 10 * cellSize);
-        
-        // 画横线
-        for (let i = 0; i <= 10; i++) {
-            ctx.beginPath();
-            ctx.moveTo(startX, startY + i * cellSize);
-            ctx.lineTo(startX + 5 * cellSize, startY + i * cellSize);
-            ctx.stroke();
-        }
-        
-        // 画竖线
-        for (let i = 0; i <= 5; i++) {
-            ctx.beginPath();
-            ctx.moveTo(startX + i * cellSize, startY);
-            ctx.lineTo(startX + i * cellSize, startY + 10 * cellSize);
-            ctx.stroke();
-        }
-        
-        // 画九宫格
-        ctx.beginPath();
-        ctx.moveTo(startX + 1 * cellSize, startY);
-        ctx.lineTo(startX + 3 * cellSize, startY + 2 * cellSize);
-        ctx.moveTo(startX + 3 * cellSize, startY);
-        ctx.lineTo(startX + 1 * cellSize, startY + 2 * cellSize);
-        ctx.moveTo(startX + 1 * cellSize, startY + 8 * cellSize);
-        ctx.lineTo(startX + 3 * cellSize, startY + 10 * cellSize);
-        ctx.moveTo(startX + 3 * cellSize, startY + 8 * cellSize);
-        ctx.lineTo(startX + 1 * cellSize, startY + 10 * cellSize);
-        ctx.stroke();
+            if (!firstTile) {
+                firstTile = tile;
+                ctx.strokeStyle = "#388e3c";
+                ctx.lineWidth = 4;
+                ctx.strokeRect(firstTile.x, firstTile.y, firstTile.width, firstTile.height);
+            } else {
+                isProcessing = true;
+                if (checkMatch(firstTile, tile)) {
+                    setTimeout(() => {
+                        firstTile.visible = false;
+                        tile.visible = false;
+                        draw();
+                        firstTile = null;
+                        isProcessing = false;
+                    }, 500);
+                } else {
+                    setTimeout(() => {
+                        draw();
+                        firstTile = null;
+                        isProcessing = false;
+                    }, 500);
+                }
+            }
+        };
+        draw();
     }
 
-    // 绘制棋子
-    function drawPieces() {
-        pieces.forEach(piece => {
-            const x = startX + piece.x * cellSize;
-            const y = startY + piece.y * cellSize;
-            ctx.fillStyle(piece.color === "red" ? "#d32f2f" : "#000");
-            ctx.beginPath();
-            ctx.arc(x, y, cellSize / 2 - 5, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.stroke();
-            ctx.fillStyle("#fff");
-            ctx.font = "28px 微软雅黑";
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillText(piece.type, x, y);
+    if (gameId === 2) {
+        const level = gameData[2].level;
+        let wins = 0;
+        const requiredWins = 2 + level;
 
-            // 选中效果
-            if (selectedPiece === piece) {
-                ctx.strokeStyle("#388e3c");
-                ctx.lineWidth = 4;
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.font = "36px 微软雅黑";
+            ctx.fillStyle = "#222";
+            ctx.textAlign = "center";
+            ctx.fillText(`斗地主 - ${levels[level]}`, 400, 50);
+            ctx.fillText(`赢 ${requiredWins} 局晋级 | 当前赢：${wins}`, 400, 100);
+            ctx.fillStyle = "#8b4513";
+            for (let i = 0; i < 3; i++) {
+                ctx.fillRect(300 + i * 60, 150, 50, 80);
+                ctx.strokeRect(300 + i * 60, 150, 50, 80);
+            }
+            ctx.fillStyle = "#fff";
+            for (let i = 0; i < 17; i++) {
+                ctx.fillRect(100 + i * 40, 450, 35, 60);
+                ctx.strokeRect(100 + i * 40, 450, 35, 60);
+            }
+            ctx.fillStyle = "#4caf50";
+            ctx.fillRect(350, 550, 100, 50);
+            ctx.strokeRect(350, 550, 100, 50);
+            ctx.fillStyle = "#fff";
+            ctx.font = "28px 微软雅黑";
+            ctx.fillText("出牌", 400, 585);
+        }
+
+        canvas.onclick = (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            if (x > 350 && x < 450 && y > 550 && y < 600) {
+                if (Math.random() > 0.3) {
+                    wins++;
+                    alert(`本局胜利！当前赢：${wins}/${requiredWins}`);
+                    if (wins >= requiredWins) {
+                        levelUp(2);
+                        wins = 0;
+                    }
+                } else {
+                    alert("本局失败，再接再厉！");
+                }
+                draw();
+            }
+        };
+        draw();
+    }
+
+    if (gameId === 3) {
+        const level = gameData[3].level;
+        const cellSize = 60;
+        const startX = 100;
+        const startY = 50;
+        let selectedPiece = null;
+        let isRedTurn = true;
+        const pieces = [
+            {x:0,y:0,type:"帅",color:"red"},{x:2,y:0,type:"士",color:"red"},{x:4,y:0,type:"士",color:"red"},
+            {x:1,y:0,type:"相",color:"red"},{x:3,y:0,type:"相",color:"red"},{x:0,y:2,type:"马",color:"red"},
+            {x:4,y:2,type:"马",color:"red"},{x:0,y:3,type:"车",color:"red"},{x:4,y:3,type:"车",color:"red"},
+            {x:1,y:3,type:"炮",color:"red"},{x:3,y:3,type:"炮",color:"red"},{x:0,y:4,type:"兵",color:"red"},
+            {x:1,y:4,type:"兵",color:"red"},{x:2,y:4,type:"兵",color:"red"},{x:3,y:4,type:"兵",color:"red"},
+            {x:4,y:4,type:"兵",color:"red"},{x:0,y:9,type:"将",color:"black"},{x:2,y:9,type:"士",color:"black"},
+            {x:4,y:9,type:"士",color:"black"},{x:1,y:9,type:"象",color:"black"},{x:3,y:9,type:"象",color:"black"},
+            {x:0,y:7,type:"马",color:"black"},{x:4,y:7,type:"马",color:"black"},{x:0,y:6,type:"车",color:"black"},
+            {x:4,y:6,type:"车",color:"black"},{x:1,y:6,type:"炮",color:"black"},{x:3,y:6,type:"炮",color:"black"},
+            {x:0,y:5,type:"卒",color:"black"},{x:1,y:5,type:"卒",color:"black"},{x:2,y:5,type:"卒",color:"black"},
+            {x:3,y:5,type:"卒",color:"black"},{x:4,y:5,type:"卒",color:"black"}
+        ];
+
+        function drawBoard() {
+            ctx.fillStyle = "#cd853f";
+            ctx.fillRect(startX, startY, 5 * cellSize, 10 * cellSize);
+            for (let i = 0; i <= 10; i++) {
                 ctx.beginPath();
-                ctx.arc(x, y, cellSize / 2, 0, Math.PI * 2);
+                ctx.moveTo(startX, startY + i * cellSize);
+                ctx.lineTo(startX + 5 * cellSize, startY + i * cellSize);
                 ctx.stroke();
             }
-        });
-    }
-
-    // 绘制整体
-    function draw() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        ctx.font = "36px 微软雅黑";
-        ctx.fillStyle = "#222";
-        ctx.textAlign = "center";
-        ctx.fillText(`中国象棋 - ${levels[level]}`, 400, 30);
-        drawBoard();
-        drawPieces();
-    }
-
-    // 移动棋子
-    function movePiece(piece, x, y) {
-        // 简单判断是否吃子
-        const targetPiece = pieces.find(p => p.x === x && p.y === y);
-        if (targetPiece && targetPiece.color !== piece.color) {
-            // 如果吃到对方"将/帅"，则胜利
-            if ((targetPiece.type === "将" && piece.color === "red") || 
-                (targetPiece.type === "帅" && piece.color === "black")) {
-                alert("将军！你赢了！");
-                levelUp(3);
-                return;
+            for (let i = 0; i <= 5; i++) {
+                ctx.beginPath();
+                ctx.moveTo(startX + i * cellSize, startY);
+                ctx.lineTo(startX + i * cellSize, startY + 10 * cellSize);
+                ctx.stroke();
             }
-            // 移除被吃的棋子
-            pieces.splice(pieces.indexOf(targetPiece), 1);
-        }
-        piece.x = x;
-        piece.y = y;
-        isRedTurn = !isRedTurn;
-    }
-
-    // 点击事件
-    canvas.onclick = (e) => {
-        const rect = canvas.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-
-        // 计算点击的棋盘坐标
-        const boardX = Math.round((x - startX) / cellSize);
-        const boardY = Math.round((y - startY) / cellSize);
-
-        // 检查是否在棋盘内
-        if (boardX < 0 || boardX > 4 || boardY < 0 || boardY > 9) return;
-
-        // 查找点击的棋子
-        const clickedPiece = pieces.find(p => p.x === boardX && p.y === boardY);
-
-        if (clickedPiece) {
-            // 只能选择自己的棋子
-            if ((isRedTurn && clickedPiece.color === "red") || 
-                (!isRedTurn && clickedPiece.color === "black")) {
-                selectedPiece = clickedPiece;
-            }
-        } else if (selectedPiece) {
-            // 移动选中的棋子
-            movePiece(selectedPiece, boardX, boardY);
-            selectedPiece = null;
+            ctx.beginPath();
+            ctx.moveTo(startX + 1 * cellSize, startY);
+            ctx.lineTo(startX + 3 * cellSize, startY + 2 * cellSize);
+            ctx.moveTo(startX + 3 * cellSize, startY);
+            ctx.lineTo(startX + 1 * cellSize, startY + 2 * cellSize);
+            ctx.moveTo(startX + 1 * cellSize, startY + 8 * cellSize);
+            ctx.lineTo(startX + 3 * cellSize, startY + 10 * cellSize);
+            ctx.moveTo(startX + 3 * cellSize, startY + 8 * cellSize);
+            ctx.lineTo(startX + 1 * cellSize, startY + 10 * cellSize);
+            ctx.stroke();
         }
 
+        function drawPieces() {
+            pieces.forEach(p => {
+                const x = startX + p.x * cellSize;
+                const y = startY + p.y * cellSize;
+                ctx.fillStyle = p.color === "red" ? "#d32f2f" : "#000";
+                ctx.beginPath();
+                ctx.arc(x, y, cellSize / 2 - 5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+                ctx.fillStyle = "#fff";
+                ctx.font = "28px 微软雅黑";
+                ctx.textAlign = "center";
+                ctx.textBaseline = "middle";
+                ctx.fillText(p.type, x, y);
+                if (selectedPiece === p) {
+                    ctx.strokeStyle = "#388e3c";
+                    ctx.lineWidth = 4;
+                    ctx.beginPath();
+                    ctx.arc(x, y, cellSize / 2, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+            });
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.font = "36px 微软雅黑";
+            ctx.fillStyle = "#222";
+            ctx.textAlign = "center";
+            ctx.fillText(`中国象棋 - ${levels[level]}`, 400, 30);
+            drawBoard();
+            drawPieces();
+        }
+
+        function movePiece(p, x, y) {
+            const target = pieces.find(p2 => p2.x === x && p2.y === y);
+            if (target && target.color !== p.color) {
+                if ((target.type === "将" && p.color === "red") || (target.type === "帅" && p.color === "black")) {
+                    alert("将军！你赢了！");
+                    levelUp(3);
+                    return;
+                }
+                pieces.splice(pieces.indexOf(target), 1);
+            }
+            p.x = x;
+            p.y = y;
+            isRedTurn = !isRedTurn;
+        }
+
+        canvas.onclick = (e) => {
+            const rect = canvas.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const boardX = Math.round((x - startX) / cellSize);
+            const boardY = Math.round((y - startY) / cellSize);
+            if (boardX < 0 || boardX > 4 || boardY < 0 || boardY > 9) return;
+            const clicked = pieces.find(p => p.x === boardX && p.y === boardY);
+            if (clicked) {
+                if ((isRedTurn && clicked.color === "red") || (!isRedTurn && clicked.color === "black")) {
+                    selectedPiece = clicked;
+                }
+            } else if (selectedPiece) {
+                movePiece(selectedPiece, boardX, boardY);
+                selectedPiece = null;
+            }
+            draw();
+        };
         draw();
-    };
-
-    draw();
+    }
 }
-
-    </script>
+</script>
 </body>
 </html>
